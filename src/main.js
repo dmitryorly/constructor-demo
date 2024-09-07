@@ -13,6 +13,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { Pane } from 'tweakpane'
 import { mainLoop } from './modules/mainLoop.js'
 import { HDRJPGLoader } from '@monogrid/gainmap-js'
+import envMapUrl from '/small_empty_room_3_1k.jpg'
+import detailsUrl from '/details.glb?url'
 
 main()
 
@@ -40,8 +42,8 @@ async function main() {
 	mainLoop.add(update)
 
 	const [model, envTexture] = await Promise.all([
-		loadModel('/details.glb'),
-		loadHDR('/small_empty_room_3_1k.jpg', renderer)
+		loadModel(detailsUrl),
+		loadHDR(envMapUrl, renderer)
 	])
 
 	scene.background = envTexture
