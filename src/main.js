@@ -3,8 +3,8 @@ import {
 	WebGLRenderer,
 	PerspectiveCamera,
 	ACESFilmicToneMapping,
-	AmbientLight,
 	EquirectangularReflectionMapping,
+	PMREMGenerator,
 	Clock,
 	MeshPhysicalMaterial
 } from 'three'
@@ -36,9 +36,6 @@ async function main() {
 	const controls = new OrbitControls(camera, canvas)
 	controls.enableDamping = true
 
-	const ambientLight = new AmbientLight(0xffffff, 1)
-	scene.add(ambientLight)
-
 	window.addEventListener('resize', resize)
 	mainLoop.add(update)
 
@@ -47,11 +44,12 @@ async function main() {
 		loadHDR('/small_empty_room_3_1k.jpg', renderer)
 	])
 
-
-
-	scene.environment = envTexture
 	scene.background = envTexture
 	scene.background.mapping = EquirectangularReflectionMapping
+	scene.backgroundBlurriness = 0.8
+
+	const pmremGenerator = new PMREMGenerator(renderer)
+	scene.environment = pmremGenerator.fromEquirectangular(envTexture).texture
 
 	const beltGroup = model.getObjectByName('belt')
 	const bodyGroup = model.getObjectByName('body')
@@ -59,9 +57,9 @@ async function main() {
 	hideAllExceptFirst(bodyGroup.children)
 
 	let beltMaterial = new MeshPhysicalMaterial({
-		color: 0xeeeeee,
-		metalness: 0.5,
-		roughness: 0.5
+		color: 0xcf8982,
+		metalness: 0,
+		roughness: 0.18
 	})
 	beltGroup.children.forEach((mesh) => {
 		mesh.material = beltMaterial
