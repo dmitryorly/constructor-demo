@@ -1,0 +1,23 @@
+{
+  "name": "constructor-demo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.10.0",
+    "eslint": "^9.10.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.3.3",
+    "vite": "^5.4.1"
+  },
+  "dependencies": {
+    "@monogrid/gainmap-js": "^3.0.6",
+    "three": "^0.168.0",
+    "tweakpane": "^4.0.4"
+  }
+}
