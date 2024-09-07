@@ -5,7 +5,8 @@ import {
 	ACESFilmicToneMapping,
 	AmbientLight,
 	EquirectangularReflectionMapping,
-	Clock
+	Clock,
+	MeshPhysicalMaterial
 } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
@@ -46,6 +47,8 @@ async function main() {
 		loadHDR('/small_empty_room_3_1k.jpg', renderer)
 	])
 
+
+
 	scene.environment = envTexture
 	scene.background = envTexture
 	scene.background.mapping = EquirectangularReflectionMapping
@@ -55,6 +58,15 @@ async function main() {
 	hideAllExceptFirst(beltGroup.children)
 	hideAllExceptFirst(bodyGroup.children)
 
+	let beltMaterial = new MeshPhysicalMaterial({
+		color: 0xeeeeee,
+		metalness: 0.5,
+		roughness: 0.5
+	})
+	beltGroup.children.forEach((mesh) => {
+		mesh.material = beltMaterial
+	})
+
 	const beltVariants = {}
 	beltGroup.children.forEach((belt) => {
 		beltVariants[belt.name] = belt
@@ -63,6 +75,11 @@ async function main() {
 	const beltOptions = {}
 	beltGroup.children.forEach((child) => {
 		beltOptions[child.name.replace('belt-', '')] = child.name
+	})
+
+	let bodyMaterial = new MeshPhysicalMaterial().copy(beltMaterial)
+	bodyGroup.children.forEach((mesh) => {
+		mesh.material = bodyMaterial
 	})
 
 	const bodyVariants = {}
@@ -76,8 +93,8 @@ async function main() {
 	})
 
 	const params = {
-		belt: Object.keys(beltVariants)[0],
-		body: Object.keys(bodyVariants)[0]
+		belt: { type: Object.keys(beltVariants)[0], color: '#' + beltMaterial.color.getHexString() },
+		body: { type: Object.keys(bodyVariants)[0], color: '#' + bodyMaterial.color.getHexString() }
 	}
 
 	scene.add(model)
@@ -86,8 +103,7 @@ async function main() {
 	const beltsFolder = pane.addFolder({ title: 'Belts' })
 	const bodiesFolder = pane.addFolder({ title: 'Bodies' })
 
-	beltsFolder.addBinding(params, 'belt', {
-		title: 'type',
+	beltsFolder.addBinding(params.belt, 'type', {
 		options: beltOptions
 	}).on('change', ({ value }) => {
 		beltGroup.children.forEach((belt) => {
@@ -95,13 +111,20 @@ async function main() {
 		})
 	})
 
-	bodiesFolder.addBinding(params, 'body', {
-		title: 'type',
+	beltsFolder.addBinding(params.belt, 'color').on('change', ({ value }) => {
+		beltMaterial.color.setStyle(value)
+	})
+
+	bodiesFolder.addBinding(params.body, 'type', {
 		options: bodyOptions
 	}).on('change', ({ value }) => {
 		bodyGroup.children.forEach((body) => {
 			body.visible = body.name === value
 		})
+	})
+
+	bodiesFolder.addBinding(params.body, 'color').on('change', ({ value }) => {
+		bodyMaterial.color.setStyle(value)
 	})
 
 	function update() {
