@@ -6,20 +6,26 @@ import {
 	EquirectangularReflectionMapping,
 	PMREMGenerator,
 	Clock,
-	MeshPhysicalMaterial
+	Color
 } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { Pane } from 'tweakpane'
 import { mainLoop } from '../shared/modules/mainLoop.js'
 import { HDRJPGLoader } from '@monogrid/gainmap-js'
-import envMapUrl from '/public/small_empty_room_3_1k.jpg'
-import detailsUrl from '/public/details.glb?url'
+import envMapUrl from '/small_empty_room_3_1k.jpg'
+import modelUrl from '/bag-01-no-color.glb?url'
 
 main()
 
+const params = {
+	color: '#000000',
+	backgroundColor: '#b8b8b8',
+	backgroundBlurriness: 0.8,
+	showEnvironment: false
+}
+
 async function main() {
-	console.log('phomtehpage')
 	const container = document.querySelector('#container')
 	const canvas = document.querySelector('#canvas')
 
@@ -34,7 +40,7 @@ async function main() {
 
 	const clock = new Clock()
 	const scene = new Scene()
-	const camera = new PerspectiveCamera(45, width / height, 1, 50)
+	const camera = new PerspectiveCamera(45, width / height, 0.1, 50)
 	camera.position.set(0, 0, 5)
 	const controls = new OrbitControls(camera, canvas)
 	controls.enableDamping = true
@@ -43,90 +49,39 @@ async function main() {
 	mainLoop.add(update)
 
 	const [model, envTexture] = await Promise.all([
-		loadModel(detailsUrl),
+		loadModel(modelUrl),
 		loadHDR(envMapUrl, renderer)
 	])
 
-	scene.background = envTexture
-	scene.background.mapping = EquirectangularReflectionMapping
-	scene.backgroundBlurriness = 0.8
+	updateBackground()
 
 	const pmremGenerator = new PMREMGenerator(renderer)
 	scene.environment = pmremGenerator.fromEquirectangular(envTexture).texture
 
-	const beltGroup = model.getObjectByName('belt')
-	const bodyGroup = model.getObjectByName('body')
-	hideAllExceptFirst(beltGroup.children)
-	hideAllExceptFirst(bodyGroup.children)
-
-	let beltMaterial = new MeshPhysicalMaterial({
-		color: 0xcf8982,
-		metalness: 0,
-		roughness: 0.18
-	})
-	beltGroup.children.forEach((mesh) => {
-		mesh.material = beltMaterial
-	})
-
-	const beltVariants = {}
-	beltGroup.children.forEach((belt) => {
-		beltVariants[belt.name] = belt
-	})
-
-	const beltOptions = {}
-	beltGroup.children.forEach((child) => {
-		beltOptions[child.name.replace('belt-', '')] = child.name
-	})
-
-	let bodyMaterial = new MeshPhysicalMaterial().copy(beltMaterial)
-	bodyGroup.children.forEach((mesh) => {
-		mesh.material = bodyMaterial
-	})
-
-	const bodyVariants = {}
-	bodyGroup.children.forEach((body) => {
-		bodyVariants[body.name] = body
-	})
-
-	const bodyOptions = {}
-	bodyGroup.children.forEach((child) => {
-		bodyOptions[child.name.replace('body-', '')] = child.name
-	})
-
-	const params = {
-		belt: { type: Object.keys(beltVariants)[0], color: '#' + beltMaterial.color.getHexString() },
-		body: { type: Object.keys(bodyVariants)[0], color: '#' + bodyMaterial.color.getHexString() }
-	}
-
 	scene.add(model)
 
+	model.traverse((node) => {
+		if (node.isMesh) {
+			if (node.name !== 'Фурнитура') {
+				node.material.color.set(params.color)
+			}
+		}
+	})
+
 	const pane = new Pane()
-	const beltsFolder = pane.addFolder({ title: 'Belts' })
-	const bodiesFolder = pane.addFolder({ title: 'Bodies' })
 
-	beltsFolder.addBinding(params.belt, 'type', {
-		options: beltOptions
-	}).on('change', ({ value }) => {
-		beltGroup.children.forEach((belt) => {
-			belt.visible = belt.name === value
+	pane.addBinding(params, 'color').on('change', ({ value }) => {
+		model.traverse((node) => {
+			if (!node.isMesh) return
+			if (node.name !== 'Фурнитура') {
+				node.material.color.set(value)
+			}
 		})
 	})
 
-	beltsFolder.addBinding(params.belt, 'color').on('change', ({ value }) => {
-		beltMaterial.color.setStyle(value)
-	})
-
-	bodiesFolder.addBinding(params.body, 'type', {
-		options: bodyOptions
-	}).on('change', ({ value }) => {
-		bodyGroup.children.forEach((body) => {
-			body.visible = body.name === value
-		})
-	})
-
-	bodiesFolder.addBinding(params.body, 'color').on('change', ({ value }) => {
-		bodyMaterial.color.setStyle(value)
-	})
+	pane.addBinding(params, 'backgroundColor').on('change', updateBackground)
+	pane.addBinding(params, 'showEnvironment').on('change', updateBackground)
+	pane.addBinding(params, 'backgroundBlurriness', { min: 0, max: 1 }).on('change', updateBackground)
 
 	function update() {
 		controls.update(clock.getDelta())
@@ -141,6 +96,16 @@ async function main() {
 		camera.updateProjectionMatrix()
 		renderer.setSize(width, height)
 	}
+
+	function updateBackground() {
+		if (params.showEnvironment) {
+			scene.background = envTexture
+			scene.background.mapping = EquirectangularReflectionMapping
+			scene.backgroundBlurriness = params.backgroundBlurriness
+		} else {
+			scene.background = new Color(params.backgroundColor)
+		}
+	}
 }
 
 async function loadHDR(url, renderer) {
@@ -153,10 +118,4 @@ async function loadModel(url) {
 	const loader = new GLTFLoader()
 	const result = await loader.loadAsync(url)
 	return result.scene
-}
-
-function hideAllExceptFirst(arr) {
-	arr.forEach((item, i) => {
-		item.visible = i === 0
-	})
 }
