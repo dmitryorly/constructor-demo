@@ -10,6 +10,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.10.0",
+    "@tweakpane/core": "^2.0.5",
     "eslint": "^9.10.0",
     "eslint-config-prettier": "^9.1.0",
     "prettier": "^3.3.3",
@@ -17,7 +18,8 @@
   },
   "dependencies": {
     "@monogrid/gainmap-js": "^3.0.6",
-    "three": "^0.168.0",
+    "@types/three": "^0.172.0",
+    "three": "^0.172.0",
     "tweakpane": "^4.0.4"
   }
 }
