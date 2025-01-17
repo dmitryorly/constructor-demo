@@ -11,14 +11,15 @@ import {
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { Pane } from 'tweakpane'
-import { mainLoop } from './shared/modules/mainLoop.js'
+import { mainLoop } from '../shared/modules/mainLoop.js'
 import { HDRJPGLoader } from '@monogrid/gainmap-js'
-import envMapUrl from '/small_empty_room_3_1k.jpg?url'
-import detailsUrl from '/details.glb?url'
+import envMapUrl from '/public/small_empty_room_3_1k.jpg'
+import detailsUrl from '/public/details.glb?url'
 
 main()
 
 async function main() {
+	console.log('phomtehpage')
 	const container = document.querySelector('#container')
 	const canvas = document.querySelector('#canvas')
 
