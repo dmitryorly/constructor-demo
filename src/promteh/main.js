@@ -3,10 +3,8 @@ import {
 	WebGLRenderer,
 	PerspectiveCamera,
 	ACESFilmicToneMapping,
-	EquirectangularReflectionMapping,
 	PMREMGenerator,
-	Clock,
-	Color
+	Clock
 } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
@@ -20,9 +18,7 @@ main()
 
 const params = {
 	color: '#000000',
-	backgroundColor: '#b8b8b8',
-	backgroundBlurriness: 0.8,
-	showEnvironment: false
+	backgroundColor: {}
 }
 
 async function main() {
@@ -37,6 +33,7 @@ async function main() {
 	renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 	renderer.toneMapping = ACESFilmicToneMapping
 	renderer.toneMappingExposure = 1
+	renderer.setClearAlpha(0)
 
 	const clock = new Clock()
 	const scene = new Scene()
@@ -48,12 +45,7 @@ async function main() {
 	window.addEventListener('resize', resize)
 	mainLoop.add(update)
 
-	const [model, envTexture] = await Promise.all([
-		loadModel(modelUrl),
-		loadHDR(envMapUrl, renderer)
-	])
-
-	updateBackground()
+	const [model, envTexture] = await Promise.all([loadModel(modelUrl), loadHDR(envMapUrl, renderer)])
 
 	const pmremGenerator = new PMREMGenerator(renderer)
 	scene.environment = pmremGenerator.fromEquirectangular(envTexture).texture
@@ -79,9 +71,21 @@ async function main() {
 		})
 	})
 
-	pane.addBinding(params, 'backgroundColor').on('change', updateBackground)
-	pane.addBinding(params, 'showEnvironment').on('change', updateBackground)
-	pane.addBinding(params, 'backgroundBlurriness', { min: 0, max: 1 }).on('change', updateBackground)
+	const getProp = (name, fallback) => getComputedStyle(container).getPropertyValue(name) || fallback
+
+	params.backgroundColor = {
+		stop1: { position: parseFloat(getProp('--p-1', '0')), color: getProp('--bg-1', '#ffffff') },
+		stop2: { position: parseFloat(getProp('--p-2', '50')), color: getProp('--bg-2', '#ffffff') },
+		stop3: { position: parseFloat(getProp('--p-3', '100')), color: getProp('--bg-3', '#ffffff') }
+	}
+
+	const backgroundFolder = pane.addFolder({ title: 'Background' })
+	backgroundFolder.addBinding(params.backgroundColor.stop1, 'position', { step: 1, min: -50, max: 150 }).on('change', updateBackground)
+	backgroundFolder.addBinding(params.backgroundColor.stop1, 'color').on('change', updateBackground)
+	backgroundFolder.addBinding(params.backgroundColor.stop2, 'position', { step: 1, min: -50, max: 150 }).on('change', updateBackground)
+	backgroundFolder.addBinding(params.backgroundColor.stop2, 'color').on('change', updateBackground)
+	backgroundFolder.addBinding(params.backgroundColor.stop3, 'position', { step: 1, min: -50, max: 150 }).on('change', updateBackground)
+	backgroundFolder.addBinding(params.backgroundColor.stop3, 'color').on('change', updateBackground)
 
 	function update() {
 		controls.update(clock.getDelta())
@@ -98,13 +102,10 @@ async function main() {
 	}
 
 	function updateBackground() {
-		if (params.showEnvironment) {
-			scene.background = envTexture
-			scene.background.mapping = EquirectangularReflectionMapping
-			scene.backgroundBlurriness = params.backgroundBlurriness
-		} else {
-			scene.background = new Color(params.backgroundColor)
-		}
+		Object.values(params.backgroundColor).forEach(({ position, color }, i) => {
+			container.style.setProperty(`--p-${i + 1}`, position + '%')
+			container.style.setProperty(`--bg-${i + 1}`, color)
+		})
 	}
 }
 
