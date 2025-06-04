@@ -214,7 +214,10 @@ async function main() {
 
 	accessories.bumps.visible = params.bumps
 
-	const pane = new Pane()
+	const pane = new Pane({
+		title: 'Parameters',
+		expanded: true,
+	})
 	const modelFolder = pane.addFolder({ title: 'Model' })
 	modelFolder.addBinding(params, 'color').on('change', ({ value }) => {
 		setColor(value)
