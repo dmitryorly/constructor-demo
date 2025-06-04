@@ -25,7 +25,10 @@ import { HDRJPGLoader } from '@monogrid/gainmap-js'
 import { mainLoop } from '../shared/modules/mainLoop.js'
 
 import envMapUrl from '/small_empty_room_3_1k.jpg'
-import modelUrl from '/bag-01-no-color.glb?url'
+import modelUrl from '/bags.glb?url'
+
+const FLAPS = ['C1', 'C2', 'C2-A', 'C3', 'C3-A']
+const BODIES = ['F1', 'F2', 'F3', 'F4']
 
 const PLANE_WIDTH = 2.5
 const PLANE_HEIGHT = 2.5
@@ -42,8 +45,13 @@ const params = {
 	plane: {
 		color: '#ffffff',
 		opacity: 1,
-		y: -1.1
-	}
+		y: -0.1
+	},
+	flap: FLAPS[0],
+	body: BODIES[0],
+	laceColor: '#ffffff',
+	lace: false,
+	bumps: false
 }
 
 main()
@@ -78,14 +86,6 @@ async function main() {
 	scene.environment = pmremGenerator.fromEquirectangular(envTexture).texture
 
 	scene.add(model)
-
-	model.traverse((node) => {
-		if (node.isMesh) {
-			if (node.name !== 'Фурнитура') {
-				node.material.color.set(params.color)
-			}
-		}
-	})
 
 	// the container, if you need to move the plane just move this
 	const shadowGroup = new Group()
@@ -169,15 +169,74 @@ async function main() {
 	const verticalBlurMaterial = new ShaderMaterial(VerticalBlurShader)
 	verticalBlurMaterial.depthTest = false
 
-	const pane = new Pane()
+	const bodies = {}
+	BODIES.forEach((name) => {
+		const body = model.getObjectByName(name)
+		if (body) {
+			bodies[name] = body
+		}
+	})
 
-	pane.addBinding(params, 'color').on('change', ({ value }) => {
-		model.traverse((node) => {
-			if (!node.isMesh) return
-			if (node.name !== 'Фурнитура') {
-				node.material.color.set(value)
-			}
+	const flaps = {}
+	FLAPS.forEach((name) => {
+		const flap = model.getObjectByName(name)
+		if (flap) {
+			flaps[name] = flap
+		}
+	})
+
+	function setColor(color) {
+		Object.values(bodies).forEach((mesh) => {
+			mesh.material?.color?.set(color)
 		})
+		Object.values(flaps).forEach((mesh) => {
+			mesh.material?.color?.set(color)
+		})
+	}
+
+	setColor(params.color)
+
+	const accessories = {
+		lace: model.getObjectByName('Lace'),
+		bumps: model.getObjectByName('Bumps')
+	}
+
+	Object.values(bodies).forEach((mesh) => {
+		mesh.visible = mesh.name === params.body
+	})
+
+	Object.values(flaps).forEach((mesh) => {
+		mesh.visible = mesh.name === params.flap
+	})
+
+	accessories.lace.visible = params.lace
+	accessories.lace.getObjectByName('NurbsPath001_1').material.color.set(params.laceColor)
+
+	accessories.bumps.visible = params.bumps
+
+	const pane = new Pane()
+	const modelFolder = pane.addFolder({ title: 'Model' })
+	modelFolder.addBinding(params, 'color').on('change', ({ value }) => {
+		setColor(value)
+	})
+	modelFolder.addBinding(params, 'body', { options: bodies }).on('change', ({ value }) => {
+		Object.values(bodies).forEach((mesh) => {
+			mesh.visible = mesh === value
+		})
+	})
+	modelFolder.addBinding(params, 'flap', { options: flaps }).on('change', ({ value }) => {
+		Object.values(flaps).forEach((mesh) => {
+			mesh.visible = mesh === value
+		})
+	})
+	modelFolder.addBinding(params, 'lace', { label: 'Lace' }).on('change', ({ value }) => {
+		accessories.lace.visible = value
+	})
+	modelFolder.addBinding(params, 'laceColor', { label: 'Lace Color' }).on('change', ({ value }) => {
+		accessories.lace.getObjectByName('NurbsPath001_1').material.color.set(value)
+	})
+	modelFolder.addBinding(params, 'bumps', { label: 'Bumps' }).on('change', ({ value }) => {
+		accessories.bumps.visible = value
 	})
 
 	const getProp = (name, fallback) => getComputedStyle(container).getPropertyValue(name) || fallback
@@ -230,7 +289,7 @@ async function main() {
 	planeFolder.addBinding(params.plane, 'opacity', { min: 0, max: 1, step: 0.1 }).on('change', ({ value }) => {
 		fillPlane.material.opacity = value
 	})
-	planeFolder.addBinding(params.plane, 'y', { min: -1.4, max: -1, step: 0.01 }).on('change', ({ value }) => {
+	planeFolder.addBinding(params.plane, 'y', { min: -0.5, max: 0.1, step: 0.01 }).on('change', ({ value }) => {
 		shadowGroup.position.y = value
 	})
 
