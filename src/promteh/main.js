@@ -179,7 +179,6 @@ async function main() {
 
 	const flaps = {}
 	FLAPS.forEach((name) => {
-		console.log(name)
 		const flap = model.getObjectByName(name)
 		if (flap) {
 			flaps[name] = flap
