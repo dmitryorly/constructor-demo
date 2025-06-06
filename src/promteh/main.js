@@ -27,7 +27,7 @@ import { mainLoop } from '../shared/modules/mainLoop.js'
 import envMapUrl from '/small_empty_room_3_1k.jpg'
 import modelUrl from '/bags.glb?url'
 
-const FLAPS = ['C1', 'C2', 'C2-A', 'C3', 'C3-A']
+const FLAPS = ['C1', 'C2', 'C2-A', 'C3', 'C3-A', 'C4']
 const BODIES = ['F1', 'F2', 'F3', 'F4']
 
 const PLANE_WIDTH = 2.5
@@ -179,6 +179,7 @@ async function main() {
 
 	const flaps = {}
 	FLAPS.forEach((name) => {
+		console.log(name)
 		const flap = model.getObjectByName(name)
 		if (flap) {
 			flaps[name] = flap
