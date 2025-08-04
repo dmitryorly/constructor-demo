@@ -73,9 +73,10 @@ async function main() {
 	const clock = new Clock()
 	const scene = new Scene()
 	const camera = new PerspectiveCamera(45, width / height, 0.1, 50)
-	camera.position.set(0, 0, 5)
+	camera.position.set(0, 1, 5)
 
 	const controls = new OrbitControls(camera, canvas)
+	controls.target.y = 1
 	controls.enableDamping = true
 
 	window.addEventListener('resize', resize)
